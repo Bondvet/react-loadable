@@ -96,6 +96,8 @@ function loadMap(obj) {
 
 const defaultLoading = () => <div>Loading ...</div>;
 
+const emptyLoader = () => Promise.resolve({});
+
 function createLoadableComponent(loadFn, options) {
     if (!options.loading) {
         options.loading = defaultLoading;
@@ -112,7 +114,7 @@ function createLoadableComponent(loadFn, options) {
     }
 
     function render(loaded, props) {
-        return React.createElement(resolve(loaded), props);
+        return React.createElement(resolve(loaded.component), props);
     }
 
     const opts = Object.assign(
@@ -124,6 +126,8 @@ function createLoadableComponent(loadFn, options) {
             render: render,
             webpack: null,
             modules: null,
+            redux: emptyLoader,
+            translations: emptyLoader,
         },
         options
     );
@@ -132,7 +136,11 @@ function createLoadableComponent(loadFn, options) {
 
     function init() {
         if (!res) {
-            res = loadFn(opts.loader);
+            res = loadFn({
+                component: opts.loader,
+                redux: opts.redux,
+                translations: opts.translations,
+            });
         }
         return res.promise;
     }
@@ -147,19 +155,25 @@ function createLoadableComponent(loadFn, options) {
         });
     }
 
-    function initRedux(
-        store,
-        { reducers, sagas, selectors, translations, initialState }
-    ) {
+    function initRedux(store, { translations, redux }) {
         const { reducerName, translationsScope } = options;
+
         // inject async reducers, if given
-        if (reducerName) {
-            if (reducers && store.injectAsyncReducer) {
-                store.injectAsyncReducer(reducerName, reducers);
+        if (redux) {
+            const { reducers, sagas, selectors, initialState } = redux;
+            if (reducerName) {
+                if (reducers && store.injectAsyncReducer) {
+                    store.injectAsyncReducer(reducerName, reducers);
+                }
+
+                if (selectors && store.injectSelectors) {
+                    store.injectSelectors(reducerName, selectors, initialState);
+                }
             }
 
-            if (selectors && store.injectSelectors) {
-                store.injectSelectors(reducerName, selectors, initialState);
+            // inject sagas
+            if (sagas && store.setSagas) {
+                store.setSagas(sagas);
             }
         }
 
@@ -170,16 +184,11 @@ function createLoadableComponent(loadFn, options) {
                 translationsScope || reducerName
             );
         }
-
-        // inject sagas
-        if (sagas && store.setSagas) {
-            store.setSagas(sagas);
-        }
     }
 
     class LoadableComponent extends React.Component {
-        constructor(props) {
-            super(props);
+        constructor(props, context) {
+            super(props, context);
             init();
 
             this.state = {
@@ -298,7 +307,7 @@ function createLoadableComponent(loadFn, options) {
 }
 
 function Loadable(opts) {
-    return createLoadableComponent(load, opts);
+    return createLoadableComponent(loadMap, opts);
 }
 
 function LoadableMap(opts) {

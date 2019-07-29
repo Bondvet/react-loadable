@@ -58,6 +58,26 @@ export default function({ types: t, template }) {
                         },
                     });
 
+                    if (propertiesMap.redux) {
+                        const reduxMethod = propertiesMap.redux.get('value');
+                        reduxMethod.traverse({
+                            Import(path) {
+                                dynamicImports.push(path.parentPath);
+                            },
+                        });
+                    }
+
+                    if (propertiesMap.translations) {
+                        const translationsMethod = propertiesMap.translations.get(
+                            'value'
+                        );
+                        translationsMethod.traverse({
+                            Import(path) {
+                                dynamicImports.push(path.parentPath);
+                            },
+                        });
+                    }
+
                     if (!dynamicImports.length) return;
 
                     propertiesMap.loader.insertAfter(
