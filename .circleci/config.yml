@@ -1,0 +1,70 @@
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2.1
+
+defaults: &defaults
+  working_directory: ~/repo
+
+  docker:
+    - image: bondvet/circle-ci:10.16.0
+
+commands:
+  deps:
+    description: checkout and install dependencies
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - dependencies-10.16.0-{{ .Environment.CIRCLE_PROJECT_REPONAME }}-{{ checksum "yarn.lock" }}
+            # fallback to using the latest cache if no exact match is found
+            - dependencies-10.16.0-{{ .Environment.CIRCLE_PROJECT_REPONAME }}-
+
+      - run:
+          name: authenticate with npmjs.org
+          command: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/repo/.npmrc
+
+      - run: yarn install --ignore-engines --frozen-lockfile
+
+      - save_cache:
+          paths:
+            - node_modules
+          key: dependencies-10.16.0-{{ .Environment.CIRCLE_PROJECT_REPONAME }}-{{ checksum "yarn.lock" }}
+
+      - persist_to_workspace:
+          root: ~/repo
+          paths: .
+
+  deploy:
+    description: deploy to npmjs.org
+    steps:
+      - run:
+          name: build and deploy
+          command: |
+            yarn build && mv .npmrc dist && (cd dist && npm publish)
+
+jobs:
+  deploy:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: ~/repo
+
+      - deps
+
+      - deploy
+
+workflows:
+  version: 2.1
+  build-and-deploy:
+    jobs:
+      - deploy:
+          context: NPM
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
