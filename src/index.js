@@ -94,9 +94,11 @@ function loadMap(obj) {
     return state;
 }
 
+const defaultLoading = () => <div>Loading ...</div>;
+
 function createLoadableComponent(loadFn, options) {
     if (!options.loading) {
-        throw new Error('react-loadable requires a `loading` component');
+        options.loading = defaultLoading;
     }
 
     function resolve(obj) {
