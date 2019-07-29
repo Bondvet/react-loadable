@@ -6,6 +6,10 @@ const { ReactReduxContext } = require('react-redux');
 const ALL_INITIALIZERS = [];
 const READY_INITIALIZERS = [];
 
+const LoadableContext = React.createContext({
+    report: () => {},
+});
+
 function isWebpackReady(getModuleIds) {
     if (typeof __webpack_modules__ !== 'object') {
         return false;
@@ -185,11 +189,7 @@ function createLoadableComponent(loadFn, options) {
             };
         }
 
-        static contextTypes = {
-            loadable: PropTypes.shape({
-                report: PropTypes.func.isRequired,
-            }),
-        };
+        static contextType = LoadableContext;
 
         componentWillMount() {
             this._mounted = true;
@@ -197,9 +197,9 @@ function createLoadableComponent(loadFn, options) {
         }
 
         _loadModule() {
-            if (this.context.loadable && Array.isArray(opts.modules)) {
+            if (this.context.report && Array.isArray(opts.modules)) {
                 opts.modules.forEach(moduleName => {
-                    this.context.loadable.report(moduleName);
+                    this.context.report(moduleName);
                 });
             }
 
@@ -280,7 +280,7 @@ function createLoadableComponent(loadFn, options) {
         }
     }
 
-    return class LoadableWrapper extends Component {
+    return class LoadableWrapper extends React.Component {
         static contextType = ReactReduxContext;
 
         static preload() {
@@ -316,22 +316,16 @@ class Capture extends React.Component {
         report: PropTypes.func.isRequired,
     };
 
-    static childContextTypes = {
-        loadable: PropTypes.shape({
-            report: PropTypes.func.isRequired,
-        }).isRequired,
+    state = {
+        report: this.props.report,
     };
 
-    getChildContext() {
-        return {
-            loadable: {
-                report: this.props.report,
-            },
-        };
-    }
-
     render() {
-        return React.Children.only(this.props.children);
+        return (
+            <LoadableContext.Provider value={this.state}>
+                {React.Children.only(this.props.children)}
+            </LoadableContext.Provider>
+        );
     }
 }
 
