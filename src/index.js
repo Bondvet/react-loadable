@@ -171,7 +171,7 @@ function createLoadableComponent(loadFn, options) {
         }
     }
 
-    return class LoadableComponent extends React.Component {
+    class LoadableComponent extends React.Component {
         constructor(props) {
             super(props);
             init();
@@ -190,12 +190,6 @@ function createLoadableComponent(loadFn, options) {
                 report: PropTypes.func.isRequired,
             }),
         };
-
-        static preload() {
-            return init();
-        }
-
-        static contextType = ReactReduxContext;
 
         componentWillMount() {
             this._mounted = true;
@@ -245,7 +239,7 @@ function createLoadableComponent(loadFn, options) {
 
             res.promise
                 .then(() => {
-                    initRedux(res.loaded);
+                    initRedux(this.props.store, res.loaded);
                     update();
                 })
                 .catch(err => {
@@ -283,6 +277,20 @@ function createLoadableComponent(loadFn, options) {
             } else {
                 return null;
             }
+        }
+    }
+
+    return class LoadableWrapper extends Component {
+        static contextType = ReactReduxContext;
+
+        static preload() {
+            return init();
+        }
+
+        render() {
+            const { store } = this.context;
+
+            return <LoadableComponent store={store} {...this.props} />;
         }
     };
 }
