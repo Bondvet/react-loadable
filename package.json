@@ -18,7 +18,8 @@
     "test": "jest --coverage",
     "build": "babel src -d lib",
     "start": "yarn build && webpack && babel-node example/server.js",
-    "prepublish": "yarn build"
+    "prepublish": "yarn build",
+    "dev": "nodemon"
   },
   "dependencies": {
     "prop-types": "^15.5.0"
@@ -31,11 +32,13 @@
     "babel-plugin-transform-async-to-generator": "^6.24.1",
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-plugin-transform-object-assign": "^6.22.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-react": "^6.24.1",
     "express": "^4.16.1",
     "flow-bin": "^0.41.0",
     "jest": "^21.2.1",
+    "nodemon": "^1.19.1",
     "react": "^16.0.0",
     "react-dom": "^16.0.0",
     "react-test-renderer": "^16.0.0",
@@ -45,5 +48,10 @@
     "react": "*",
     "react-redux": ">=6",
     "redux": "^4.0.0-0"
+  },
+  "nodemonConfig": {
+    "exec": "yarn build",
+    "delay": "500",
+    "watch": "src"
   }
 }

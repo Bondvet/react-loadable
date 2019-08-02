@@ -96,7 +96,15 @@ function loadMap(obj) {
 
 const defaultLoading = () => <div>Loading ...</div>;
 
-const emptyLoader = () => Promise.resolve({});
+const emptyLoader = () => Promise.resolve(null);
+
+function getRedux({ reducers, sagas, initialState, selectors }) {
+    if (reducers || sagas || initialState || selectors) {
+        return { reducers, sagas, initialState, selectors };
+    }
+
+    return null;
+}
 
 function createLoadableComponent(loadFn, options) {
     if (!options.loading) {
@@ -155,12 +163,18 @@ function createLoadableComponent(loadFn, options) {
         });
     }
 
-    function initRedux(store, { translations, redux }) {
+    function initRedux(
+        store,
+        { translations: _translations, redux: _redux, component }
+    ) {
         const { reducerName, translationsScope } = options;
+        const redux = _redux || getRedux(component);
+        const translations = _translations || component.translations;
 
         // inject async reducers, if given
         if (redux) {
             const { reducers, sagas, selectors, initialState } = redux;
+
             if (reducerName) {
                 if (reducers && store.injectAsyncReducer) {
                     store.injectAsyncReducer(reducerName, reducers);
@@ -284,7 +298,8 @@ function createLoadableComponent(loadFn, options) {
                     retry: this.retry,
                 });
             } else if (this.state.loaded) {
-                return opts.render(this.state.loaded, this.props);
+                const { store, ...props } = this.props;
+                return opts.render(this.state.loaded, props);
             } else {
                 return null;
             }
