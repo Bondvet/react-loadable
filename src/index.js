@@ -267,7 +267,8 @@ function createLoadableComponent(loadFn, options) {
                     initRedux(this.props.store, res.loaded);
                     update();
                 })
-                .catch(err => {
+                .catch(error => {
+                    console.warn('error loading', options.componentName, error);
                     update();
                 });
         }
