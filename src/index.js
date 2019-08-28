@@ -141,6 +141,51 @@ function createLoadableComponent(loadFn, options) {
     );
 
     let res = null;
+    let theStore = null;
+    let initialized = false;
+    function initRedux(
+        store,
+        { translations: _translations, redux: _redux, component }
+    ) {
+        if (!initialized) {
+            initialized = true;
+            const { reducerName, translationsScope } = options;
+            const redux = _redux || getRedux(component);
+            const translations = _translations || component.translations;
+
+            // inject async reducers, if given
+            if (redux) {
+                const { reducers, sagas, selectors, initialState } = redux;
+
+                if (reducerName) {
+                    if (reducers && store.injectAsyncReducer) {
+                        store.injectAsyncReducer(reducerName, reducers);
+                    }
+
+                    if (selectors && store.injectSelectors) {
+                        store.injectSelectors(
+                            reducerName,
+                            selectors,
+                            initialState
+                        );
+                    }
+                }
+
+                // inject sagas
+                if (sagas && store.setSagas) {
+                    store.setSagas(sagas);
+                }
+            }
+
+            // add translations
+            if (translations && store.addTranslations) {
+                store.addTranslations(
+                    translations,
+                    translationsScope || reducerName
+                );
+            }
+        }
+    }
 
     function init() {
         if (!res) {
@@ -150,7 +195,13 @@ function createLoadableComponent(loadFn, options) {
                 translations: opts.translations,
             });
         }
-        return res.promise;
+        return res.promise.then(data => {
+            if (theStore) {
+                initRedux(theStore, res.loaded);
+            }
+
+            return data;
+        });
     }
 
     ALL_INITIALIZERS.push(init);
@@ -161,43 +212,6 @@ function createLoadableComponent(loadFn, options) {
                 return init();
             }
         });
-    }
-
-    function initRedux(
-        store,
-        { translations: _translations, redux: _redux, component }
-    ) {
-        const { reducerName, translationsScope } = options;
-        const redux = _redux || getRedux(component);
-        const translations = _translations || component.translations;
-
-        // inject async reducers, if given
-        if (redux) {
-            const { reducers, sagas, selectors, initialState } = redux;
-
-            if (reducerName) {
-                if (reducers && store.injectAsyncReducer) {
-                    store.injectAsyncReducer(reducerName, reducers);
-                }
-
-                if (selectors && store.injectSelectors) {
-                    store.injectSelectors(reducerName, selectors, initialState);
-                }
-            }
-
-            // inject sagas
-            if (sagas && store.setSagas) {
-                store.setSagas(sagas);
-            }
-        }
-
-        // add translations
-        if (translations && store.addTranslations) {
-            store.addTranslations(
-                translations,
-                translationsScope || reducerName
-            );
-        }
     }
 
     class LoadableComponent extends React.Component {
@@ -212,14 +226,13 @@ function createLoadableComponent(loadFn, options) {
                 loading: res.loading,
                 loaded: res.loaded,
             };
+
+            this._loadModule();
         }
 
         static contextType = LoadableContext;
 
-        componentWillMount() {
-            this._mounted = true;
-            this._loadModule();
-        }
+        _mounted = true;
 
         _loadModule() {
             if (this.context.report && Array.isArray(opts.modules)) {
@@ -316,6 +329,9 @@ function createLoadableComponent(loadFn, options) {
 
         render() {
             const { store } = this.context;
+            if (theStore !== store) {
+                theStore = store;
+            }
 
             return <LoadableComponent store={store} {...this.props} />;
         }
