@@ -142,48 +142,40 @@ function createLoadableComponent(loadFn, options) {
 
     let res = null;
     let theStore = null;
-    let initialized = false;
     function initRedux(
         store,
         { translations: _translations, redux: _redux, component }
     ) {
-        if (!initialized) {
-            initialized = true;
-            const { reducerName, translationsScope } = options;
-            const redux = _redux || getRedux(component);
-            const translations = _translations || component.translations;
+        const { reducerName, translationsScope } = options;
+        const redux = _redux || getRedux(component);
+        const translations = _translations || component.translations;
 
-            // inject async reducers, if given
-            if (redux) {
-                const { reducers, sagas, selectors, initialState } = redux;
+        // inject async reducers, if given
+        if (redux) {
+            const { reducers, sagas, selectors, initialState } = redux;
 
-                if (reducerName) {
-                    if (reducers && store.injectAsyncReducer) {
-                        store.injectAsyncReducer(reducerName, reducers);
-                    }
-
-                    if (selectors && store.injectSelectors) {
-                        store.injectSelectors(
-                            reducerName,
-                            selectors,
-                            initialState
-                        );
-                    }
+            if (reducerName) {
+                if (reducers && store.injectAsyncReducer) {
+                    store.injectAsyncReducer(reducerName, reducers);
                 }
 
-                // inject sagas
-                if (sagas && store.setSagas) {
-                    store.setSagas(sagas);
+                if (selectors && store.injectSelectors) {
+                    store.injectSelectors(reducerName, selectors, initialState);
                 }
             }
 
-            // add translations
-            if (translations && store.addTranslations) {
-                store.addTranslations(
-                    translations,
-                    translationsScope || reducerName
-                );
+            // inject sagas
+            if (sagas && store.setSagas) {
+                store.setSagas(sagas);
             }
+        }
+
+        // add translations
+        if (translations && store.addTranslations) {
+            store.addTranslations(
+                translations,
+                translationsScope || reducerName
+            );
         }
     }
 

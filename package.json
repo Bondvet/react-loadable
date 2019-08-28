@@ -19,8 +19,7 @@
     "build": "babel src -d lib",
     "start": "yarn build && webpack && babel-node example/server.js",
     "prepublish": "yarn build",
-    "dev": "nodemon",
-    "postbuild": "mkdir -p ../insights/node_modules/@bondvet/react-loadable && cp -r babel.js webpack.js lib/ ../insights/node_modules/@bondvet/react-loadable"
+    "dev": "nodemon"
   },
   "dependencies": {
     "prop-types": "^15.5.0"
