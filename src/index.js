@@ -126,7 +126,7 @@ function createLoadableComponent(loadFn, options) {
         return React.createElement(resolve(loaded.component), props);
     }
 
-    const localizeVersion = !!LocalizeContext.LocalizeContext ? 3 : 2;
+    const localizeVersion = !!ReactLocalizeRedux.LocalizeContext ? 3 : 2;
     const opts = Object.assign(
         {
             loader: null,
