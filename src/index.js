@@ -1,4 +1,5 @@
 'use strict';
+const ReactLocalizeRedux = require('react-localize-redux');
 const React = require('react');
 const PropTypes = require('prop-types');
 const { ReactReduxContext } = require('react-redux');
@@ -125,6 +126,7 @@ function createLoadableComponent(loadFn, options) {
         return React.createElement(resolve(loaded.component), props);
     }
 
+    const localizeVersion = !!LocalizeContext.LocalizeContext ? 3 : 2;
     const opts = Object.assign(
         {
             loader: null,
@@ -142,6 +144,7 @@ function createLoadableComponent(loadFn, options) {
 
     let res = null;
     let theStore = null;
+    let localizeContext = null;
     function initRedux(
         store,
         { translations: _translations, redux: _redux, component }
@@ -171,11 +174,25 @@ function createLoadableComponent(loadFn, options) {
         }
 
         // add translations
-        if (translations && store.addTranslations) {
-            store.addTranslations(
-                translations,
-                translationsScope || reducerName
-            );
+        if (translations) {
+            if (localizeVersion === 2) {
+                if (store.addTranslations) {
+                    store.addTranslations(
+                        translations,
+                        translationsScope || reducerName
+                    );
+                }
+            } else if (localizeContext) {
+                const key = translationsScope || reducerName;
+                Object.keys(translations).forEach(language => {
+                    localizeContext.addTranslationForLanguage(
+                        {
+                            [key]: translations[language],
+                        },
+                        language
+                    );
+                });
+            }
         }
     }
 
@@ -312,20 +329,51 @@ function createLoadableComponent(loadFn, options) {
         }
     }
 
-    return class LoadableWrapper extends React.Component {
-        static contextType = ReactReduxContext;
+    function renderWithStore(store, props) {
+        if (theStore !== store) {
+            theStore = store;
+        }
 
+        return <LoadableComponent store={store} {...props} />;
+    }
+
+    if (localizeVersion === 2) {
+        return class LoadableWrapper extends React.Component {
+            static preload() {
+                return init();
+            }
+
+            render() {
+                return (
+                    <ReactReduxContext.Consumer>
+                        {({ store }) => renderWithStore(store, this.props)}
+                    </ReactReduxContext.Consumer>
+                );
+            }
+        };
+    }
+
+    return class LocalizedLoadableWraper extends React.Component {
         static preload() {
             return init();
         }
-
         render() {
-            const { store } = this.context;
-            if (theStore !== store) {
-                theStore = store;
-            }
-
-            return <LoadableComponent store={store} {...this.props} />;
+            return (
+                <LocalizeContext.Consumer>
+                    {context => {
+                        if (localizeContext !== context) {
+                            localizeContext = context;
+                        }
+                        return (
+                            <ReactReduxContext.Consumer>
+                                {({ store }) =>
+                                    renderWithStore(store, this.props)
+                                }
+                            </ReactReduxContext.Consumer>
+                        );
+                    }}
+                </LocalizeContext.Consumer>
+            );
         }
     };
 }
