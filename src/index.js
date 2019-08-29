@@ -359,7 +359,7 @@ function createLoadableComponent(loadFn, options) {
         }
         render() {
             return (
-                <LocalizeContext.Consumer>
+                <ReactLocalizeRedux.LocalizeContext.Consumer>
                     {context => {
                         if (localizeContext !== context) {
                             localizeContext = context;
@@ -372,7 +372,7 @@ function createLoadableComponent(loadFn, options) {
                             </ReactReduxContext.Consumer>
                         );
                     }}
-                </LocalizeContext.Consumer>
+                </ReactLocalizeRedux.LocalizeContext.Consumer>
             );
         }
     };
