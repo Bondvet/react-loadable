@@ -46,6 +46,7 @@
   },
   "peerDependencies": {
     "react": "*",
+    "react-localize-redux": "^3.5.3",
     "react-redux": ">=6",
     "redux": "^4.0.0-0"
   },
