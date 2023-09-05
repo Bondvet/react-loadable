@@ -330,6 +330,10 @@ function createLoadableComponent(loadFn, options) {
     }
 
     function renderWithStore(store, props) {
+        if (!store) {
+            console.warn('no store', store, props);
+            return null;
+        }
         if (theStore !== store) {
             theStore = store;
         }
@@ -346,7 +350,7 @@ function createLoadableComponent(loadFn, options) {
             render() {
                 return (
                     <ReactReduxContext.Consumer>
-                        {({ store }) => renderWithStore(store, this.props)}
+                        {(renderProps) => renderWithStore(renderProps.store, this.props)}
                     </ReactReduxContext.Consumer>
                 );
             }
